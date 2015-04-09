@@ -26,8 +26,7 @@ String.prototype.getBytes = function ()
 function init ()
 {
     Config.init ();
-
-    var scales = new Scales (0, 128, 128, 1);
+   var scales = new Scales (0, 128, 128, 1);
     scales.setChromatic (true);
 	model = new Model (70, scales, 8, 8, 8);
 

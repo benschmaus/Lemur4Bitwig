@@ -474,6 +474,6 @@ OSCMessage.prototype.skipToFourByteBoundary = function ()
 OSCMessage.prototype.alignToFourByteBoundary = function ()
 {
     var upper = 4 - (this.data.length % 4);
-	for (var i = 0; i < upper; i++)
+	for (var i = 0; upper != 4 && i < upper; i++)
         this.data.push (0);
 };

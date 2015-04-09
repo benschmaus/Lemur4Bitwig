@@ -24,7 +24,9 @@ OSCMessage.prototype.init = function (address, param, type)
                 break;
 
             case 'boolean':
-                this.types.push (param ? 'T' : 'F');
+                //this.types.push (param ? 'T' : 'F');
+                this.types.push ('i');
+                this.values.push (param);
                 break;
 
             case 'number':
@@ -47,6 +49,47 @@ OSCMessage.prototype.init = function (address, param, type)
     }
     else
         this.types.push ('N');
+};
+
+OSCMessage.prototype.addarg = function (param, type)
+{
+    if (param != null)
+    {
+        switch (typeof (param))
+        {
+            case 'string':
+                this.types.push ('s');
+                this.values.push (param);
+                break;
+
+            case 'boolean':
+                //this.types.push (param ? 'T' : 'F');
+                this.types.push ('i');
+                this.values.push (param);
+                break;
+
+            case 'number':
+                if (type)
+                    this.types.push (type);
+                else
+                {
+                    if (param % 1 === 0) // Is Integer ?
+                        this.types.push ('i');
+                    else
+                        this.types.push ('f');
+                }
+                this.values.push (param);
+                break;
+
+            default:
+                println ("Unsupported object type: " + typeof (param));
+                break;
+        }
+    }
+    else
+        this.types.push ('N');
+        
+    
 };
 
 OSCMessage.prototype.parse = function (data)
@@ -125,6 +168,9 @@ OSCMessage.prototype.build = function ()
         this.alignToFourByteBoundary ();
     }
     
+    //println("addr: " + this.address);
+    //if(this.address.indexOf("hasContent")!=-1)
+    //  println("data("+this.data.length+"): " + this.data.toString());
     return this.data;
 };
 
@@ -411,6 +457,7 @@ OSCMessage.prototype.writeString = function (str)
 {
     if(str.length == 0)
      this.data.push(0);
+    
     for (var i = 0; i < str.length; i++)
         this.data.push (str.charCodeAt (i));
 };

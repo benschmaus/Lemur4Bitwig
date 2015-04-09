@@ -168,9 +168,8 @@ OSCMessage.prototype.build = function ()
         this.alignToFourByteBoundary ();
     }
     
-    //println("addr: " + this.address);
-    //if(this.address.indexOf("hasContent")!=-1)
-    //  println("data("+this.data.length+"): " + this.data.toString());
+   // println("addr: " + this.address);
+   //   println("data("+this.data.length+"): " + this.data.toString());
     return this.data;
 };
 
@@ -455,12 +454,16 @@ OSCMessage.prototype.readString = function ()
 
 OSCMessage.prototype.writeString = function (str)
 {
-    if(str.length == 0)
+    if(str.length == 0){
      this.data.push(0);
-    
+     return;
+    }
     for (var i = 0; i < str.length; i++)
         this.data.push (str.charCodeAt (i));
+    if(str.length % 4 == 0)
+     this.data.push(0);
 };
+
 
 // A uint32 size count, followed by that many 8-bit bytes of arbitrary binary
 // data, followed by 0-3 additional zero bytes to make the total number of bits

@@ -158,7 +158,7 @@ OSCWriter.prototype.flushTrack = function (trackAddress, trackindex, track, dump
                             case 'color':
                                 var color = AbstractTrackBankProxy.getColorEntry (s[q]);
                                 if (color)
-                                    this.sendClipGridOSCColor (address,trackindex,j+1,color[0], color[1], color[2], dump);
+                                    this.sendClipGridOSCColor (address,trackindex,j+1,color[0], color[1], color[2], true);
                                 break;
                             case 'index':
                                  //Don't send this message
@@ -244,7 +244,7 @@ OSCWriter.prototype.sendOSCColor = function (address, red, green, blue, dump)
 OSCWriter.prototype.sendClipGridOSCColor = function (address, trackindex, clipindex, red, green, blue, dump)
 {
     var color = Math.round (red * 8323072) + Math.round (green * 32512) + Math.round (blue * 127);
-    
+    //println("color: " + red + "," + green + "," + blue);
     //var color = "RGB(" + red + "," + green + "," + blue + ")";
     this.sendClipGridOSC (address, trackindex, clipindex, color, dump);
 };
@@ -254,5 +254,6 @@ OSCWriter.prototype.sendTrackGridOSCColor = function (address, trackindex, red, 
     var color = Math.round (red * 8323072) + Math.round (green * 32512) + Math.round (blue * 127);
     
     //var color = "RGB(" + red + "," + green + "," + blue + ")";
+    //println("color: " + red + "," + green + "," + blue);
     this.sendTrackGridOSC (address, trackindex, color, dump);
 };

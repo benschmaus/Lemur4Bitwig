@@ -407,6 +407,8 @@ OSCMessage.prototype.readString = function ()
 
 OSCMessage.prototype.writeString = function (str)
 {
+    if(str.length == 0)
+     this.data.push(0);
     for (var i = 0; i < str.length; i++)
         this.data.push (str.charCodeAt (i));
 };

@@ -97,6 +97,8 @@ OSCMessage.prototype.build = function ()
     this.data.push (','.charCodeAt (0));
     for (var i = 0; i < this.types.length; i++)
         this.data.push (this.types[i].charCodeAt (0));
+    if(this.data.length % 4 == 0)
+        this.data.push(0);
     this.alignToFourByteBoundary ();
     
     for (var i = 0; i < this.values.length; i++)
@@ -407,8 +409,14 @@ OSCMessage.prototype.readString = function ()
 
 OSCMessage.prototype.writeString = function (str)
 {
+    if(str.length == 0){
+     this.data.push(0);
+     return;
+    }
     for (var i = 0; i < str.length; i++)
         this.data.push (str.charCodeAt (i));
+    if(str.length % 4 == 0)
+     this.data.push(0);
 };
 
 // A uint32 size count, followed by that many 8-bit bytes of arbitrary binary
@@ -474,6 +482,6 @@ OSCMessage.prototype.skipToFourByteBoundary = function ()
 OSCMessage.prototype.alignToFourByteBoundary = function ()
 {
     var upper = 4 - (this.data.length % 4);
-	for (var i = 0; i < upper; i++)
+	for (var i = 0; upper != 4 && i < upper; i++)
         this.data.push (0);
 };

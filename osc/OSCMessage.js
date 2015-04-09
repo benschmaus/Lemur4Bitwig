@@ -14,6 +14,20 @@ OSCMessage.prototype.init = function (address, param, type)
 {
     this.address = address;
     this.types = [];
+    
+    if(param instanceof Array){
+       for(var i=0; i < param.length; i++){
+        this.addArgument(param[i]);
+       }
+    }else{
+       this.addArgument(param,type);
+    }
+    
+
+};
+
+OSCMessage.prototype.addArgument = function (param, type)
+{
     if (param != null)
     {
         switch (typeof (param))

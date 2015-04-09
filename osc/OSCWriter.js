@@ -164,7 +164,7 @@ OSCWriter.prototype.flushTrack = function (trackAddress, trackindex, track, dump
                                  //Don't send this message
                                  break;
                             default:
-                                this.sendClipGridOSC (address, trackindex, j+1, s[q], dump);
+                                this.sendOSC (address, [trackindex, j+1, s[q]], dump);
                                 break;
                         }
                     }
@@ -209,31 +209,6 @@ OSCWriter.prototype.sendOSC = function (address, value, dump)
     this.messages.push (msg.build ());
 };
 
-OSCWriter.prototype.sendClipGridOSC = function (address,trackindex, clipindex, value, dump)
-{
-    if (!dump && this.oldValues[address] === value)
-        return;
-    this.oldValues[address] = value;
-       
-    var msg = new OSCMessage ();
-    msg.init (address,trackindex);
-    msg.addarg (clipindex);
-    msg.addarg (value);
-    this.messages.push (msg.build ());
-};
-
-OSCWriter.prototype.sendTrackGridOSC = function (address,trackindex, value, dump)
-{
-    if (!dump && this.oldValues[address] === value)
-        return;
-    this.oldValues[address] = value;    
-    var msg = new OSCMessage ();
-    msg.init (address, trackindex);
-    msg.addarg (value);
-    
-    this.messages.push (msg.build ());
-};
-
 OSCWriter.prototype.sendOSCColor = function (address, red, green, blue, dump)
 {
     //var color = Math.round (red * 8323072) + Math.round (green * 32512) + Math.round (blue * 127);
@@ -246,7 +221,7 @@ OSCWriter.prototype.sendClipGridOSCColor = function (address, trackindex, clipin
     var color = Math.round (red * 8323072) + Math.round (green * 32512) + Math.round (blue * 127);
     //println("color: " + red + "," + green + "," + blue);
     //var color = "RGB(" + red + "," + green + "," + blue + ")";
-    this.sendClipGridOSC (address, trackindex, clipindex, color, dump);
+    this.sendOSC (address, [trackindex, clipindex, color], dump);
 };
 
 OSCWriter.prototype.sendTrackGridOSCColor = function (address, trackindex, red, green, blue, dump)
@@ -255,5 +230,5 @@ OSCWriter.prototype.sendTrackGridOSCColor = function (address, trackindex, red, 
     
     //var color = "RGB(" + red + "," + green + "," + blue + ")";
     //println("color: " + red + "," + green + "," + blue);
-    this.sendTrackGridOSC (address, trackindex, color, dump);
+    this.sendOSC (address, [trackindex, color], dump);
 };

@@ -8,7 +8,7 @@ load ("framework/daw/ClassLoader.js");
 load ("osc/ClassLoader.js");
 load ("Config.js");
 
-host.defineController ("Open Sound Control", "OSC", "2.20", "94DD41B0-EFEE-11E3-AC10-0800200C9A66", "Jürgen Moßgraber");
+host.defineController ("Liine", "Lemur", "0.1", "6513e1fa-decc-11e4-8c75-1681e6b88ec1", "Carroll Vance");
 host.defineMidiPorts (1, 0);
 
 var model = null;

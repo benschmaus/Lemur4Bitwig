@@ -38,9 +38,7 @@ OSCMessage.prototype.addArgument = function (param, type)
                 break;
 
             case 'boolean':
-                //this.types.push (param ? 'T' : 'F');
-                this.types.push ('i');
-                this.values.push (param);
+                this.types.push (param ? 'T' : 'F');
                 break;
 
             case 'number':
@@ -63,47 +61,6 @@ OSCMessage.prototype.addArgument = function (param, type)
     }
     else
         this.types.push ('N');
-};
-
-OSCMessage.prototype.addarg = function (param, type)
-{
-    if (param != null)
-    {
-        switch (typeof (param))
-        {
-            case 'string':
-                this.types.push ('s');
-                this.values.push (param);
-                break;
-
-            case 'boolean':
-                //this.types.push (param ? 'T' : 'F');
-                this.types.push ('i');
-                this.values.push (param);
-                break;
-
-            case 'number':
-                if (type)
-                    this.types.push (type);
-                else
-                {
-                    if (param % 1 === 0) // Is Integer ?
-                        this.types.push ('i');
-                    else
-                        this.types.push ('f');
-                }
-                this.values.push (param);
-                break;
-
-            default:
-                println ("Unsupported object type: " + typeof (param));
-                break;
-        }
-    }
-    else
-        this.types.push ('N');
-        
-    
 };
 
 OSCMessage.prototype.parse = function (data)
@@ -154,8 +111,9 @@ OSCMessage.prototype.build = function ()
     this.data.push (','.charCodeAt (0));
     for (var i = 0; i < this.types.length; i++)
         this.data.push (this.types[i].charCodeAt (0));
-    if(this.data.length % 4 == 0)
-        this.data.push(0);
+    // Make sure the type section is terminated correctly
+    if (this.data.length % 4 == 0)
+        this.data.push (0);
     this.alignToFourByteBoundary ();
     
     for (var i = 0; i < this.values.length; i++)
@@ -182,8 +140,6 @@ OSCMessage.prototype.build = function ()
         this.alignToFourByteBoundary ();
     }
     
-   // println("addr: " + this.address);
-   //   println("data("+this.data.length+"): " + this.data.toString());
     return this.data;
 };
 
@@ -468,16 +424,20 @@ OSCMessage.prototype.readString = function ()
 
 OSCMessage.prototype.writeString = function (str)
 {
-    if(str.length == 0){
-     this.data.push(0);
-     return;
+    // Correctly terminate empty strings
+    if (str.length == 0)
+    {
+        this.data.push (0);
+        return;
     }
+    
     for (var i = 0; i < str.length; i++)
         this.data.push (str.charCodeAt (i));
-    if(str.length % 4 == 0)
-     this.data.push(0);
-};
 
+    // Correctly terminate empty string
+    if (this.data.length % 4 == 0)
+        this.data.push (0);
+};
 
 // A uint32 size count, followed by that many 8-bit bytes of arbitrary binary
 // data, followed by 0-3 additional zero bytes to make the total number of bits
@@ -541,7 +501,12 @@ OSCMessage.prototype.skipToFourByteBoundary = function ()
 
 OSCMessage.prototype.alignToFourByteBoundary = function ()
 {
-    var upper = 4 - (this.data.length % 4);
-	for (var i = 0; upper != 4 && i < upper; i++)
+    var rest = this.data.length % 4;
+    // Already aligned?
+    if (rest == 0)
+        return;
+    
+    var upper = 4 - rest;
+	for (var i = 0; i < upper; i++)
         this.data.push (0);
 };

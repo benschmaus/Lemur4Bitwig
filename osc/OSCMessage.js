@@ -97,6 +97,8 @@ OSCMessage.prototype.build = function ()
     this.data.push (','.charCodeAt (0));
     for (var i = 0; i < this.types.length; i++)
         this.data.push (this.types[i].charCodeAt (0));
+    if(this.data.length % 4 == 0)
+        this.data.push(0);
     this.alignToFourByteBoundary ();
     
     for (var i = 0; i < this.values.length; i++)

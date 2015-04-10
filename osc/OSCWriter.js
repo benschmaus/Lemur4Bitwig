@@ -41,21 +41,21 @@ OSCWriter.prototype.flush = function (dump)
     this.sendOSC ('/layout', app.getPanelLayout ().toLowerCase (), dump);
 
     var arrange = this.model.getArranger ();
-    this.sendOSC ('/arranger/cueMarkerVisibility', arrange.areCueMarkersVisible () ? 1 : 0, dump);
-    this.sendOSC ('/arranger/playbackFollow', arrange.isPlaybackFollowEnabled () ? 1 : 0, dump);
-    this.sendOSC ('/arranger/trackRowHeight', arrange.hasDoubleRowTrackHeight () ? 1 : 0, dump);
-    this.sendOSC ('/arranger/clipLauncherSectionVisibility', arrange.isClipLauncherVisible () ? 1 : 0, dump);
-    this.sendOSC ('/arranger/timeLineVisibility', arrange.isTimelineVisible () ? 1 : 0, dump);
-    this.sendOSC ('/arranger/ioSectionVisibility', arrange.isIoSectionVisible () ? 1 : 0, dump);
-    this.sendOSC ('/arranger/effectTracksVisibility', arrange.areEffectTracksVisible () ? 1 : 0, dump);
+    this.sendOSC ('/arranger/cueMarkerVisibility', arrange.areCueMarkersVisible (), dump);
+    this.sendOSC ('/arranger/playbackFollow', arrange.isPlaybackFollowEnabled (), dump);
+    this.sendOSC ('/arranger/trackRowHeight', arrange.hasDoubleRowTrackHeight (), dump);
+    this.sendOSC ('/arranger/clipLauncherSectionVisibility', arrange.isClipLauncherVisible (), dump);
+    this.sendOSC ('/arranger/timeLineVisibility', arrange.isTimelineVisible (), dump);
+    this.sendOSC ('/arranger/ioSectionVisibility', arrange.isIoSectionVisible (), dump);
+    this.sendOSC ('/arranger/effectTracksVisibility', arrange.areEffectTracksVisible (), dump);
 
     var mix = this.model.getMixer ();
-    this.sendOSC ('/mixer/clipLauncherSectionVisibility', mix.isClipLauncherSectionVisible () ? 1 : 0, dump);
-    this.sendOSC ('/mixer/crossFadeSectionVisibility', mix.isCrossFadeSectionVisible () ? 1 : 0, dump);
-    this.sendOSC ('/mixer/deviceSectionVisibility', mix.isDeviceSectionVisible () ? 1 : 0, dump);
-    this.sendOSC ('/mixer/sendsSectionVisibility', mix.isSendSectionVisible () ? 1 : 0, dump);
-    this.sendOSC ('/mixer/ioSectionVisibility', mix.isIoSectionVisible () ? 1 : 0, dump);
-    this.sendOSC ('/mixer/meterSectionVisibility', mix.isMeterSectionVisible () ? 1 : 0, dump);
+    this.sendOSC ('/mixer/clipLauncherSectionVisibility', mix.isClipLauncherSectionVisible (), dump);
+    this.sendOSC ('/mixer/crossFadeSectionVisibility', mix.isCrossFadeSectionVisible (), dump);
+    this.sendOSC ('/mixer/deviceSectionVisibility', mix.isDeviceSectionVisible (), dump);
+    this.sendOSC ('/mixer/sendsSectionVisibility', mix.isSendSectionVisible (), dump);
+    this.sendOSC ('/mixer/ioSectionVisibility', mix.isIoSectionVisible (), dump);
+    this.sendOSC ('/mixer/meterSectionVisibility', mix.isMeterSectionVisible (), dump);
     
     //
     // Master-/Track(-commands)
@@ -158,7 +158,7 @@ OSCWriter.prototype.flushTrack = function (trackAddress, trackindex, track, dump
                             case 'color':
                                 var color = AbstractTrackBankProxy.getColorEntry (s[q]);
                                 if (color)
-                                    this.sendClipGridOSCColor (address,trackindex,j+1,color[0], color[1], color[2], true);
+                                    this.sendClipGridOSCColor (address,trackindex,j+1,color[0], color[1], color[2], dump);
                                 break;
                             case 'index':
                                  //Don't send this message
@@ -201,9 +201,36 @@ OSCWriter.prototype.flushFX = function (fxAddress, fxParam, dump)
 
 OSCWriter.prototype.sendOSC = function (address, value, dump)
 {
-    if (!dump && this.oldValues[address] === value)
+    if(!dump && value instanceof Array){
+        if (address in this.oldValues){
+            if(value.length == this.oldValues[address]){
+                var matching = true;
+                for(var i=0; i<value.length; i++){
+                    if(value[i] != this.oldValues[address][i]){
+                        matching = false;
+                        break;
+                    }
+                }
+                if(matching)
+                    return;
+            }
+        }
+    }else if (!dump && this.oldValues[address] === value)
         return;
+    
+    
     this.oldValues[address] = value;
+
+    //Convert booleans to int for client compatibility
+    if(value instanceof Array){
+        for(var i=0;i<value.length;i++){
+            if(typeof(value[i]) == 'boolean')
+                value[i] = (value[i]) ? 1 : 0;
+        }
+    }else if(typeof(value) == 'boolean')
+        value = (value) ? 1 : 0;
+    
+        
     var msg = new OSCMessage ();
     msg.init (address, value);
     this.messages.push (msg.build ());

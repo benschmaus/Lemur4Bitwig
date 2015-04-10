@@ -62,8 +62,10 @@ OSCWriter.prototype.flush = function (dump)
     //
     
 	var tb = this.model.getTrackBank ();
-	for (var i = 0; i < tb.numTracks; i++)
+	for (var i = 0; i < tb.numTracks; i++){
         this.flushTrack ('/clipgrid/track/', i, tb.getTrack (i), dump);
+        this.flushTrack ('/track/' + (i + 1) + '/', -1, tb.getTrack (i), dump);
+}
     this.flushTrack ('/master/',-1 , this.model.getMasterTrack (), dump);
 
     //
@@ -173,8 +175,12 @@ OSCWriter.prototype.flushTrack = function (trackAddress, trackindex, track, dump
                 
             case 'color':
                 var color = AbstractTrackBankProxy.getColorEntry (track[p]);
-                if (color)
-                    this.sendTrackGridOSCColor (trackAddress + p, trackindex, color[0], color[1], color[2], dump);
+                if (color){
+                    if(trackindex!=-1)
+                        this.sendTrackGridOSCColor (trackAddress + p, trackindex, color[0], color[1], color[2], dump);
+                    else
+                        this.sendOSCColor (trackAddress + p, color[0], color[1], color[2], dump);
+                }
                 break;
                 
             case 'crossfadeMode':
@@ -184,7 +190,10 @@ OSCWriter.prototype.flushTrack = function (trackAddress, trackindex, track, dump
                 break;
                 
             default:
-                this.sendOSC (trackAddress + p, [trackindex,track[p]], dump);
+                if(trackindex!=-1)
+                    this.sendOSC (trackAddress + p, [trackindex,track[p]], dump);
+                else
+                    this.sendOSC (trackAddress + p, track[p], dump);
                 break;
         }
 	}

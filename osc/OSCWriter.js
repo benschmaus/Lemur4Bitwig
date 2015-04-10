@@ -63,7 +63,7 @@ OSCWriter.prototype.flush = function (dump)
     
 	var tb = this.model.getTrackBank ();
 	for (var i = 0; i < tb.numTracks; i++)
-        this.flushTrack ('/track/' + (i + 1) + '/', i, tb.getTrack (i), dump);
+        this.flushTrack ('/clipgrid/track/', i, tb.getTrack (i), dump);
     this.flushTrack ('/master/',-1 , this.model.getMasterTrack (), dump);
 
     //
@@ -174,7 +174,7 @@ OSCWriter.prototype.flushTrack = function (trackAddress, trackindex, track, dump
             case 'color':
                 var color = AbstractTrackBankProxy.getColorEntry (track[p]);
                 if (color)
-                    this.sendOSCColor (trackAddress + p, color[0], color[1], color[2], dump);
+                    this.sendTrackGridOSCColor (trackAddress + p, trackindex, color[0], color[1], color[2], dump);
                 break;
                 
             case 'crossfadeMode':
@@ -184,7 +184,7 @@ OSCWriter.prototype.flushTrack = function (trackAddress, trackindex, track, dump
                 break;
                 
             default:
-                this.sendOSC (trackAddress + p, track[p], dump);
+                this.sendOSC (trackAddress + p, [trackindex,track[p]], dump);
                 break;
         }
 	}
@@ -201,6 +201,8 @@ OSCWriter.prototype.flushFX = function (fxAddress, fxParam, dump)
 
 OSCWriter.prototype.sendOSC = function (address, value, dump)
 {
+    //if(address.indexOf('/clipgrid/') != -1 && address.indexOf('track') != -1)
+    //  println("addr: " + address + " value: " + value);
     if(!dump && value instanceof Array){
         if (address in this.oldValues){
             if(value.length == this.oldValues[address]){
@@ -245,17 +247,11 @@ OSCWriter.prototype.sendOSCColor = function (address, red, green, blue, dump)
 
 OSCWriter.prototype.sendClipGridOSCColor = function (address, trackindex, clipindex, red, green, blue, dump)
 {
-    var color = Math.round (red * 8323072) + Math.round (green * 32512) + Math.round (blue * 127);
-    //println("color: " + red + "," + green + "," + blue);
-    //var color = "RGB(" + red + "," + green + "," + blue + ")";
-    this.sendOSC (address, [trackindex, clipindex, color], dump);
+
+    this.sendOSC (address, [trackindex, clipindex, red,green,blue], dump);
 };
 
 OSCWriter.prototype.sendTrackGridOSCColor = function (address, trackindex, red, green, blue, dump)
 {
-    var color = Math.round (red * 8323072) + Math.round (green * 32512) + Math.round (blue * 127);
-    
-    //var color = "RGB(" + red + "," + green + "," + blue + ")";
-    //println("color: " + red + "," + green + "," + blue);
-    this.sendOSC (address, [trackindex, color], dump);
+    this.sendOSC (address, [trackindex, red,green,blue], dump);
 };

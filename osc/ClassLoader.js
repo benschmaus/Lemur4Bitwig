@@ -5,3 +5,4 @@
 load ("OSCMessage.js");
 load ("OSCParser.js");
 load ("OSCWriter.js");
+load ("LemurWriter.js");

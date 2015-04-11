@@ -15,52 +15,51 @@ OSCMessage.prototype.init = function (address, param, type)
     this.address = address;
     this.types = [];
     
-    if(param instanceof Array){
-       for(var i=0; i < param.length; i++){
-        this.addArgument(param[i]);
-       }
-    }else{
-       this.addArgument(param,type);
+    if (param instanceof Array)
+    {
+        for (var i = 0; i < param.length; i++)
+            this.addArgument (param[i]);
     }
-    
-
+    else
+       this.addArgument(param,type);
 };
 
 OSCMessage.prototype.addArgument = function (param, type)
 {
-    if (param != null)
+    if (param == null)
     {
-        switch (typeof (param))
-        {
-            case 'string':
-                this.types.push ('s');
-                this.values.push (param);
-                break;
-
-            case 'boolean':
-                this.types.push (param ? 'T' : 'F');
-                break;
-
-            case 'number':
-                if (type)
-                    this.types.push (type);
-                else
-                {
-                    if (param % 1 === 0) // Is Integer ?
-                        this.types.push ('i');
-                    else
-                        this.types.push ('f');
-                }
-                this.values.push (param);
-                break;
-
-            default:
-                println ("Unsupported object type: " + typeof (param));
-                break;
-        }
-    }
-    else
         this.types.push ('N');
+        return;
+    }
+    
+    switch (typeof (param))
+    {
+        case 'string':
+            this.types.push ('s');
+            this.values.push (param);
+            break;
+
+        case 'boolean':
+            this.types.push (param ? 'T' : 'F');
+            break;
+
+        case 'number':
+            if (type)
+                this.types.push (type);
+            else
+            {
+                if (param % 1 === 0) // Is it an Integer ?
+                    this.types.push ('i');
+                else
+                    this.types.push ('f');
+            }
+            this.values.push (param);
+            break;
+
+        default:
+            println ("Unsupported object type: " + typeof (param));
+            break;
+    }
 };
 
 OSCMessage.prototype.parse = function (data)

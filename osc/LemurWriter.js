@@ -8,8 +8,9 @@ LemurWriter.FXPARAM_ATTRIBS = [ "name", "valueStr", "value" ];
 function LemurWriter (model, oscPort)
 {
     this.model   = model;
-    
+ 
     this.oldValues = {};
+    this.trie = {};
     this.messages = [];
 }
 
@@ -18,7 +19,6 @@ LemurWriter.prototype.flush = function (dump)
     //
     // Transport
     //
-
     var trans = this.model.getTransport ();
     this.sendOSC ('/play', trans.isPlaying, dump);
     this.sendOSC ('/record', trans.isRecording, dump);
@@ -205,18 +205,21 @@ LemurWriter.prototype.flushFX = function (fxAddress, fxParam, dump)
 
 LemurWriter.prototype.sendOSC = function (address, value, dump)
 {
+    
+    var cleanAddress = address.replace(/\//g,'').toLowerCase();
     if (!dump)
     {
-        if (value instanceof Array)
+        var trieValue = this.trieGet(cleanAddress,this.trie,0);
+        if (trieValue instanceof Array)
         {
-            if (this.compareArray (this.oldValues[address], value))
+            if (this.compareArray (trieValue, value))
                 return;
         }
-        else if (this.oldValues[address] === value)
+        else if (trieValue == value)
             return;
     }
     
-    this.oldValues[address] = value;
+    this.oldValues[cleanAddress] = value;
 
     // Convert boolean values to integer for client compatibility
     if (value instanceof Array)
@@ -230,36 +233,79 @@ LemurWriter.prototype.sendOSC = function (address, value, dump)
     var msg = new OSCMessage ();
     msg.init (address, value);
     this.messages.push (msg.build ());
+    
 };
 
 LemurWriter.prototype.sendOSCGrid = function (address, valueAddress, value, dump)
 {
-    var gridAddress = address + valueAddress.toString();
+    var gridAddress = (address.replace(/\//g,'') + valueAddress.toString().replace(/,/g,'')).replace(' ','').toLowerCase();
     if (!dump)
     {
-        if (this.compareArray (this.oldValues[gridAddress], value))
+        var trieArray = this.trieGet(gridAddress,this.trie,0);
+        if(typeof(trieArray) == 'array'){
+            if (this.compareArray (trieArray, value)){
+                return;
+            }
+        }else if(trieArray == value){
             return;
+        }
     }
+    this.trieSet(gridAddress,value,this.trie,0);
     
-    //println(valueAddress.toString());
-    this.oldValues[gridAddress] = value;
+    // Convert boolean values to integer for client compatibility
+    if (value instanceof Array)
+    {
+        for (var i = 0; i < value.length; i++)
+            value[i] = this.convertBooleanToInt (value[i]);
+    }
+    else
+        value = this.convertBooleanToInt (value);
 
-    this.sendOSC(address,valueAddress.concat(value),true);
+    var msg = new OSCMessage ();
+    msg.init (address, valueAddress.concat(value));
+    this.messages.push (msg.build ());
     
 };
+
 
 LemurWriter.prototype.convertBooleanToInt = function (value)
 {
     return typeof (value) == 'boolean' ? (value ? 1 : 0) : value;
 };
 
-LemurWriter.prototype.compareArray = function (address, value)
+LemurWriter.prototype.trieSet = function(path,value,trie,depth){
+   if(path.length>0){
+       if(typeof(trie[path.charAt(0)]) != 'object') 
+           trie[path.charAt(0)] = {};
+       this.trieSet(path.substring(1),value,trie[path.charAt(0)],depth+1);
+   }
+   
+   trie['data'] = value;
+};
+
+LemurWriter.prototype.trieGet = function(path,trie,depth){
+   if(path.length>0){
+       if(path.charAt(0) in trie){
+           if(path.length != 1){
+               return this.trieGet(path.substring(1),trie[path.charAt(0)],depth+1);
+           }else{
+               return trie[path.charAt(0)]['data'];
+           }
+       }else{
+           return false;
+       }
+   }
+
+   return false;
+};
+
+LemurWriter.prototype.compareArray = function (a1, a2)
 {
-    if (!(address in this.oldValues) || value.length != this.oldValues[address])
+    if(a1.length != a2.length)
         return false;
-    for (var i = 0; i < value.length; i++)
+    for (var i = 0; i < a1.length; i++)
     {
-        if (value[i] != this.oldValues[address][i])
+        if (a1[i] != a2[i])
             return false;
     }
     return true;

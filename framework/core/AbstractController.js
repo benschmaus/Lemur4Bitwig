@@ -6,6 +6,7 @@
 function AbstractController ()
 {
     this.surface = null;
+    
 }
 
 AbstractController.prototype.shutdown = function ()

@@ -14,6 +14,7 @@ host.defineMidiPorts (1, 0);
 var model = null;
 var parser = null;
 var writer = null;
+var limiter = 0;
 
 String.prototype.getBytes = function () 
 {
@@ -43,5 +44,9 @@ function exit ()
 
 function flush ()
 {
-    writer.flush ();
+    if(limiter == 10){
+       writer.flush ();
+       limiter = 0;
+    }
+    limiter++;
 }

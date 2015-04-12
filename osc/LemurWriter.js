@@ -219,7 +219,7 @@ LemurWriter.prototype.sendOSC = function (address, value, dump)
             return;
     }
     
-    this.oldValues[cleanAddress] = value;
+    this.trieSet(cleanAddress,value,this.trie,0);
 
     // Convert boolean values to integer for client compatibility
     if (value instanceof Array)

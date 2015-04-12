@@ -33,19 +33,29 @@ function init ()
 
     parser = new OSCParser (model, Config.receiveHost, Config.receivePort);
     writer = new LemurWriter (model);
-    writer.flush ();
-	   println ("Initialized.");
     
+    offlineFlush();
+    
+	   println ("Initialized.");
+
 }
 
 function exit ()
 {
 }
 
+function offlineFlush(){
+    var trans = model.getTransport ();
+    if(!trans.isPlaying){
+        writer.flush (false);
+    }
+    scheduleTask (offlineFlush, null, 1000);
+}
+
 function flush ()
 {
     if(limiter == 10){
-       writer.flush ();
+       writer.flush (false);
        limiter = 0;
     }
     limiter++;

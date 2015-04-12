@@ -209,14 +209,18 @@ LemurWriter.prototype.sendOSC = function (address, value, dump)
     var cleanAddress = address.replace(/\//g,'').toLowerCase();
     if (!dump)
     {
-        var trieValue = this.trieGet(cleanAddress,this.trie,0);
-        if (trieValue instanceof Array)
-        {
-            if (this.compareArray (trieValue, value))
+        var trieArray = this.trieGet(cleanAddress,this.trie,0);
+        var trieData = trieArray[1];
+        if(trieArray[0]){
+            if(typeof(trieData) == 'array'){
+                if (this.compareArray (trieData, value)){
+                    return;
+                }
+            }else if(trieData == value){
                 return;
+            }
+        
         }
-        else if (trieValue == value)
-            return;
     }
     
     this.trieSet(cleanAddress,value,this.trie,0);
@@ -242,12 +246,16 @@ LemurWriter.prototype.sendOSCGrid = function (address, valueAddress, value, dump
     if (!dump)
     {
         var trieArray = this.trieGet(gridAddress,this.trie,0);
-        if(typeof(trieArray) == 'array'){
-            if (this.compareArray (trieArray, value)){
+        var trieData = trieArray[1];
+        if(trieArray[0]){
+            if(typeof(trieData) == 'array'){
+                if (this.compareArray (trieData, value)){
+                    return;
+                }
+            }else if(trieData == value){
                 return;
             }
-        }else if(trieArray == value){
-            return;
+        
         }
     }
     this.trieSet(gridAddress,value,this.trie,0);
@@ -289,14 +297,14 @@ LemurWriter.prototype.trieGet = function(path,trie,depth){
            if(path.length != 1){
                return this.trieGet(path.substring(1),trie[path.charAt(0)],depth+1);
            }else{
-               return trie[path.charAt(0)]['data'];
+               return [true,trie[path.charAt(0)]['data']];
            }
        }else{
-           return false;
+           return [false,0];
        }
    }
 
-   return false;
+   return [false,0];
 };
 
 LemurWriter.prototype.compareArray = function (a1, a2)

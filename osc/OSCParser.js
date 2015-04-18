@@ -1034,6 +1034,20 @@ OSCParser.prototype.parseMidi = function (parts, value)
             }
             break;
             
+        case 'cc':
+            var cc = parseInt (parts.shift ());
+            this.noteInput.sendRawMidiEvent (0xB0 + midiChannel, cc, parseInt (value));
+            break;
+            
+        case 'aftertouch':
+            var note = parseInt (parts.shift ());
+            this.noteInput.sendRawMidiEvent (0xA0 + midiChannel, this.keysTranslation[note], value);
+            break;
+            
+        case 'pitchbend':
+            this.noteInput.sendRawMidiEvent (0xE0 + midiChannel, 0, value);
+            break;
+            
         default:
 			println ('Unhandled Midi Parameter: ' + p);
             break;

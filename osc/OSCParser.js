@@ -57,8 +57,7 @@ OSCParser.prototype.parse = function (msg)
         case 'refresh':
             writer.flush (true);
             break;
-
-        
+            
         //
         // Transport
         //
@@ -490,6 +489,10 @@ OSCParser.prototype.parseTrackCommands = function (parts, value)
             this.model.getCurrentTrackBank ().getClipLauncherScenes ().stop ();
             break;
             
+        case 'vu':
+            Config.setVUMetersEnabled (value);
+            break;
+
 		default:
 			println ('Unhandled Track Command: ' + p);
 			break;
@@ -971,7 +974,26 @@ OSCParser.prototype.parseUserValue = function (index, parts, value)
 
 OSCParser.prototype.parseMidi = function (parts, value)
 {
-    var midiChannel = parseInt (parts.shift ());
+    var path2 = parts.shift ();
+    var midiChannel = parseInt (path2);
+    if (isNaN (midiChannel))
+    {
+        switch (path2)
+        {
+            case 'velocity':
+                var velocity = parseInt (value);
+                Config.setAccentEnabled (velocity > 0);
+                if (velocity > 0)
+                    Config.setAccentValue (velocity);
+                break;
+            
+            default:
+                println ('Unhandled Midi Parameter: ' + p);
+                break;
+        }
+        return;
+    }
+    
     var p = parts.shift ();
     switch (p)
     {
@@ -1000,6 +1022,8 @@ OSCParser.prototype.parseMidi = function (parts, value)
                 default:
                     var note = parseInt (n);
                     var velocity = parseInt (value);
+                    if (velocity > 0)
+                        velocity = Config.accentActive ? Config.fixedAccentValue : velocity;
                     this.noteInput.sendRawMidiEvent (0x90 + midiChannel, this.keysTranslation[note], velocity);
             }
             break;
@@ -1029,6 +1053,8 @@ OSCParser.prototype.parseMidi = function (parts, value)
                 default:
                     var note = parseInt (n);
                     var velocity = parseInt (value);
+                    if (velocity > 0)
+                        velocity = Config.accentActive ? Config.fixedAccentValue : velocity;
                     this.noteInput.sendRawMidiEvent (0x90 + midiChannel, this.drumsTranslation[note], velocity);
                     break;
             }
@@ -1041,7 +1067,10 @@ OSCParser.prototype.parseMidi = function (parts, value)
             
         case 'aftertouch':
             var note = parseInt (parts.shift ());
-            this.noteInput.sendRawMidiEvent (0xA0 + midiChannel, this.keysTranslation[note], value);
+            var velocity = parseInt (value);
+            if (velocity > 0)
+                velocity = Config.accentActive ? Config.fixedAccentValue : velocity;
+            this.noteInput.sendRawMidiEvent (0xA0 + midiChannel, this.keysTranslation[note], velocity);
             break;
             
         case 'pitchbend':

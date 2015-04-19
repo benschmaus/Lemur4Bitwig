@@ -185,6 +185,11 @@ LemurWriter.prototype.flushTrack = function (trackAddress, trackGridNumber, trac
                 this.sendOSC (trackAddress + p + '/AB', track[p] == 'AB', dump);
                 break;
                 
+            case 'vu':
+                if (Config.enableVUMeters)
+                    this.sendOSC (trackAddress + p, track[p], dump);
+                break;
+                
             default:
                 if(trackGridNumber!=-1)
                     this.sendOSCGrid(trackGridAddress+p,[trackGridNumber],track[p],dump);

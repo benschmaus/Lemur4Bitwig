@@ -62,11 +62,9 @@ OSCWriter.prototype.flush = function (dump)
     //
     
 	var tb = this.model.getTrackBank ();
-	for (var i = 0; i < tb.numTracks; i++){
-        this.flushTrack ('/clipgrid/track/', i, tb.getTrack (i), dump);
-        this.flushTrack ('/track/' + (i + 1) + '/', -1, tb.getTrack (i), dump);
-}
-    this.flushTrack ('/master/',-1 , this.model.getMasterTrack (), dump);
+	for (var i = 0; i < tb.numTracks; i++)
+        this.flushTrack ('/track/' + (i + 1) + '/', tb.getTrack (i), dump);
+    this.flushTrack ('/master/', this.model.getMasterTrack (), dump);
 
     //
     // Device
@@ -128,7 +126,7 @@ OSCWriter.prototype.flush = function (dump)
         host.sendDatagramPacket (Config.sendHost, Config.sendPort, msg);
 };
 
-OSCWriter.prototype.flushTrack = function (trackAddress, trackindex, track, dump)
+OSCWriter.prototype.flushTrack = function (trackAddress, track, dump)
 {
     for (var a = 0; a < OSCWriter.TRACK_ATTRIBS.length; a++)
     {
@@ -147,26 +145,23 @@ OSCWriter.prototype.flushTrack = function (trackAddress, trackindex, track, dump
                 break;
                 
             case 'slots':
-                if (!track.slots || trackindex == -1)
+                if (!track.slots)
                     continue;
                 for (var j = 0; j < 8; j++)
                 {
                     var s = track.slots[j];
                     for (var q in s)
                     {
-                        var address = '/clipgrid/clip/' + q;
+                        var address = trackAddress + 'clip/' + (j + 1) + '/' + q;
                         switch (q)
                         {
                             case 'color':
                                 var color = AbstractTrackBankProxy.getColorEntry (s[q]);
                                 if (color)
-                                    this.sendClipGridOSCColor (address,trackindex,j+1,color[0], color[1], color[2], dump);
+                                    this.sendOSCColor (address, color[0], color[1], color[2], dump);
                                 break;
-                            case 'index':
-                                 //Don't send this message
-                                 break;
                             default:
-                                this.sendOSC (address, [trackindex, j+1, s[q]], dump);
+                                this.sendOSC (address, s[q], dump);
                                 break;
                         }
                     }
@@ -175,12 +170,8 @@ OSCWriter.prototype.flushTrack = function (trackAddress, trackindex, track, dump
                 
             case 'color':
                 var color = AbstractTrackBankProxy.getColorEntry (track[p]);
-                if (color){
-                    if(trackindex!=-1)
-                        this.sendTrackGridOSCColor (trackAddress + p, trackindex, color[0], color[1], color[2], dump);
-                    else
-                        this.sendOSCColor (trackAddress + p, color[0], color[1], color[2], dump);
-                }
+                if (color)
+                    this.sendOSCColor (trackAddress + p, color[0], color[1], color[2], dump);
                 break;
                 
             case 'crossfadeMode':
@@ -189,11 +180,13 @@ OSCWriter.prototype.flushTrack = function (trackAddress, trackindex, track, dump
                 this.sendOSC (trackAddress + p + '/AB', track[p] == 'AB', dump);
                 break;
                 
-            default:
-                if(trackindex!=-1)
-                    this.sendOSC (trackAddress + p, [trackindex,track[p]], dump);
-                else
+            case 'vu':
+                if (Config.enableVUMeters)
                     this.sendOSC (trackAddress + p, track[p], dump);
+                break;
+                
+            default:
+                this.sendOSC (trackAddress + p, track[p], dump);
                 break;
         }
 	}
@@ -210,38 +203,28 @@ OSCWriter.prototype.flushFX = function (fxAddress, fxParam, dump)
 
 OSCWriter.prototype.sendOSC = function (address, value, dump)
 {
-    //if(address.indexOf('/clipgrid/') != -1 && address.indexOf('track') != -1)
-    //  println("addr: " + address + " value: " + value);
-    if(!dump && value instanceof Array){
-        if (address in this.oldValues){
-            if(value.length == this.oldValues[address]){
-                var matching = true;
-                for(var i=0; i<value.length; i++){
-                    if(value[i] != this.oldValues[address][i]){
-                        matching = false;
-                        break;
-                    }
-                }
-                if(matching)
-                    return;
-            }
+    if (!dump)
+    {
+        if (value instanceof Array)
+        {
+            if (this.compareArray (address, value))
+                return;
         }
-    }else if (!dump && this.oldValues[address] === value)
-        return;
-    
+        else if (this.oldValues[address] === value)
+            return;
+    }
     
     this.oldValues[address] = value;
 
-    //Convert booleans to int for client compatibility
-    if(value instanceof Array){
-        for(var i=0;i<value.length;i++){
-            if(typeof(value[i]) == 'boolean')
-                value[i] = (value[i]) ? 1 : 0;
-        }
-    }else if(typeof(value) == 'boolean')
-        value = (value) ? 1 : 0;
-    
-        
+    // Convert boolean values to integer for client compatibility
+    if (value instanceof Array)
+    {
+        for (var i = 0; i < value.length; i++)
+            value[i] = this.convertBooleanToInt (value[i]);
+    }
+    else
+        value = this.convertBooleanToInt (value);
+
     var msg = new OSCMessage ();
     msg.init (address, value);
     this.messages.push (msg.build ());
@@ -249,18 +232,22 @@ OSCWriter.prototype.sendOSC = function (address, value, dump)
 
 OSCWriter.prototype.sendOSCColor = function (address, red, green, blue, dump)
 {
-    //var color = Math.round (red * 8323072) + Math.round (green * 32512) + Math.round (blue * 127);
-    var color = "RGB(" + red + "," + green + "," + blue + ")";
-    this.sendOSC (address, color, dump);
+    this.sendOSC (address, "RGB(" + red + "," + green + "," + blue + ")", dump);
 };
 
-OSCWriter.prototype.sendClipGridOSCColor = function (address, trackindex, clipindex, red, green, blue, dump)
+OSCWriter.prototype.convertBooleanToInt = function (value)
 {
-
-    this.sendOSC (address, [trackindex, clipindex, red,green,blue], dump);
+    return typeof (value) == 'boolean' ? (value ? 1 : 0) : value;
 };
 
-OSCWriter.prototype.sendTrackGridOSCColor = function (address, trackindex, red, green, blue, dump)
+OSCWriter.prototype.compareArray = function (address, value)
 {
-    this.sendOSC (address, [trackindex, red,green,blue], dump);
+    if (!(address in this.oldValues) || value.length != this.oldValues[address])
+        return false;
+    for (var i = 0; i < value.length; i++)
+    {
+        if (value[i] != this.oldValues[address][i])
+            return false;
+    }
+    return true;
 };

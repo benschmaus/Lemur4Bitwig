@@ -5,6 +5,17 @@
 LemurWriter.TRACK_ATTRIBS = [ "activated", "selected", "name", "volumeStr", "volume", "panStr", "pan", "color", "vu", "mute", "solo", "recarm", "monitor", "autoMonitor", "sends", "slots", "crossfadeMode" ];
 LemurWriter.FXPARAM_ATTRIBS = [ "name", "valueStr", "value" ];
 
+LemurWriter.NOTE_STATE_COLORS = [];
+
+LemurWriter.NOTE_STATE_COLOR_OFF = [ 0, 0, 0 ]; // Black
+LemurWriter.NOTE_STATE_COLOR_ON  = [ 0, 1, 0 ]; // Green
+LemurWriter.NOTE_STATE_COLOR_REC = [ 1, 0, 0 ]; // Red
+
+LemurWriter.NOTE_STATE_COLORS[Scales.SCALE_COLOR_OFF]          = [ 0, 0, 0 ]; // Black
+LemurWriter.NOTE_STATE_COLORS[Scales.SCALE_COLOR_OCTAVE]       = [ 0.2666666805744171 , 0.7843137383460999 , 1 ]; // Ocean Blue
+LemurWriter.NOTE_STATE_COLORS[Scales.SCALE_COLOR_NOTE]         = [ 1, 1, 1 ]; // White
+LemurWriter.NOTE_STATE_COLORS[Scales.SCALE_COLOR_OUT_OF_SCALE] = [ 0, 0, 0 ]; // Black
+
 function LemurWriter (model, oscPort)
 {
     this.model   = model;
@@ -113,9 +124,11 @@ LemurWriter.prototype.flush = function (dump)
     //
     
     var user = this.model.getUserControlBank ();
-	for (var i = 0; i < cd.numParams; i++)
+    for (var i = 0; i < cd.numParams; i++)
         this.flushFX ('/user/param/' + (i + 1) + '/', user.getUserParam (i), dump);
 
+    this.flushNotes (dump);
+    
     if (this.messages.length == 0)
     {
         this.messages = [];
@@ -125,6 +138,28 @@ LemurWriter.prototype.flush = function (dump)
     while (msg = this.messages.shift ())
         host.sendDatagramPacket (Config.sendHost, Config.sendPort, msg);
 };
+
+LemurWriter.prototype.flushNotes = function (dump)
+{
+    var isKeyboardEnabled = this.canSelectedTrackHoldNotes ();
+    var isRecording = this.model.hasRecordingState ();
+    var scales = this.model.getScales();
+    for (var i = 0; i < 127; i++)
+    {
+        var color = isKeyboardEnabled ? (this.model.pressedKeys[i] > 0 ?
+            (isRecording ? LemurWriter.NOTE_STATE_COLOR_REC : LemurWriter.NOTE_STATE_COLOR_ON) :
+            LemurWriter.NOTE_STATE_COLORS[scales.getColor (this.model.keysTranslation, i)]) : 
+            LemurWriter.NOTE_STATE_COLOR_OFF;
+        this.sendOSC ('/vkb_midi/note/' + i + '/color', [color[0], color[1], color[2]], dump);
+    }
+};
+
+LemurWriter.prototype.canSelectedTrackHoldNotes = function ()
+{
+    var t = this.model.getCurrentTrackBank ().getSelectedTrack ();
+    return t != null && t.canHoldNotes;
+};
+
 
 LemurWriter.prototype.flushTrack = function (trackAddress, trackGridNumber, track, dump)
 {

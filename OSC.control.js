@@ -29,11 +29,10 @@ function init ()
     Config.init ();
     var scales = new Scales (0, 128, 128, 1);
     scales.setChromatic (true);
-    model = new Model (70, scales, 8, 8, 8);
-
+    model = new OSCModel (scales);
     parser = new OSCParser (model, Config.receiveHost, Config.receivePort);
     writer = new LemurWriter (model);
-    
+
     offlineFlush();
     
 	   println ("Initialized.");

@@ -439,10 +439,12 @@ OSCParser.prototype.parseTrackCommands = function (parts, value)
             
                 case '+':
                     this.model.getCurrentTrackBank ().scrollTracksDown ();
+                    writer.flush (true);
                     break;
             
                 case '-':
                     this.model.getCurrentTrackBank ().scrollTracksUp ();
+                    writer.flush (true);
                     break;
             }
             break;
@@ -459,6 +461,7 @@ OSCParser.prototype.parseTrackCommands = function (parts, value)
                 scheduleTask (doObject (this, this.selectTrack), [0], 75);
             }
             this.selectTrack (index);
+            writer.flush (true);
             break;
             
         case '-':
@@ -474,6 +477,7 @@ OSCParser.prototype.parseTrackCommands = function (parts, value)
                 return;
             }
             this.selectTrack (index);
+            writer.flush (true);
             break;
             
         case 'add':
@@ -763,9 +767,11 @@ OSCParser.prototype.parseDeviceValue = function (cursorDevice, parts, value)
                     {
                         case '+':
                             cursorDevice.nextParameterPage ();
+                            writer.flush (true);
                             break;
                         case '-':
                             cursorDevice.previousParameterPage ();
+                            writer.flush (true);
                             break;
                     }
                 }
@@ -799,13 +805,17 @@ OSCParser.prototype.parseDeviceValue = function (cursorDevice, parts, value)
 			break;
     
         case '+':
-            if (value == null || value > 0)
+            if (value == null || value > 0){
                 cursorDevice.selectNext ();
+                writer.flush (true);
+            }
             break;
 
         case '-':
-            if (value == null || value > 0)
+            if (value == null || value > 0){
                 cursorDevice.selectPrevious ();
+                writer.flush (true);
+            }
             break;
 
         case 'preset':
@@ -815,9 +825,11 @@ OSCParser.prototype.parseDeviceValue = function (cursorDevice, parts, value)
                 {
                     case '+':
                         cursorDevice.switchToNextPreset ();
+                        writer.flush (true);
                         break;
                     case '-':
                         cursorDevice.switchToPreviousPreset ();
+                        writer.flush (true);
                         break;
                 }
             }
@@ -830,9 +842,11 @@ OSCParser.prototype.parseDeviceValue = function (cursorDevice, parts, value)
                 {
                     case '+':
                         cursorDevice.switchToNextPresetCategory ();
+                        writer.flush (true);
                         break;
                     case '-':
                         cursorDevice.switchToPreviousPresetCategory ();
+                        writer.flush (true);
                         break;
                 }
             }
@@ -845,9 +859,11 @@ OSCParser.prototype.parseDeviceValue = function (cursorDevice, parts, value)
                 {
                     case '+':
                         cursorDevice.switchToNextPresetCreator ();
+                        writer.flush (true);
                         break;
                     case '-':
                         cursorDevice.switchToPreviousPresetCreator ();
+                        writer.flush (true);
                         break;
                 }
             }

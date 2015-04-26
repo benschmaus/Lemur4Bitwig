@@ -78,7 +78,12 @@ LemurWriter.prototype.flush = function (dump)
 	   for (var i = 0; i < trackBank.numTracks; i++)
         this.flushTrack ('/track/' + (i + 1) + '/', i, trackBank.getTrack (i), dump);
     this.flushTrack ('/master/', -1,this.model.getMasterTrack (), dump);
-
+    
+    var selectedTrack = trackBank.getSelectedTrack ();
+    if (selectedTrack == null)
+        selectedTrack = OSCWriter.EMPTY_TRACK;
+    else
+        this.flushTrack ('/track/selected/', -1, selectedTrack, dump);
     //
     // Device
     //
@@ -152,6 +157,9 @@ LemurWriter.prototype.flushNotes = function (dump)
             (isRecording ? LemurWriter.NOTE_STATE_COLOR_REC : LemurWriter.NOTE_STATE_COLOR_ON) :
             LemurWriter.NOTE_STATE_COLORS[scales.getColor (this.model.keysTranslation, i)]) : 
             LemurWriter.NOTE_STATE_COLOR_OFF;
+            
+            
+        
         this.sendOSC ('/vkb_midi/note/' + i + '/color', [color[0], color[1], color[2]], dump);
     }
 };
@@ -265,6 +273,8 @@ LemurWriter.prototype.sendOSC = function (address, value, dump)
         }
     }
     
+
+    
     this.trieSet(cleanAddress,value,this.trie,0);
 
     // Convert boolean values to integer for client compatibility
@@ -276,6 +286,7 @@ LemurWriter.prototype.sendOSC = function (address, value, dump)
     else
         value = this.convertBooleanToInt (value);
 
+    
     var msg = new OSCMessage ();
     msg.init (address, value);
     this.messages.push (msg.build ());

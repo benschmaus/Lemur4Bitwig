@@ -23,6 +23,8 @@ function LemurWriter (model, oscPort)
     this.oldValues = {};
     this.trie = {};
     this.messages = [];
+    
+
 }
 
 LemurWriter.prototype.flush = function (dump)
@@ -72,9 +74,9 @@ LemurWriter.prototype.flush = function (dump)
     // Master-/Track(-commands)
     //
     
-	   var tb = this.model.getTrackBank ();
-	   for (var i = 0; i < tb.numTracks; i++)
-        this.flushTrack ('/track/' + (i + 1) + '/', i, tb.getTrack (i), dump);
+	   var trackBank = this.model.getCurrentTrackBank ();
+	   for (var i = 0; i < trackBank.numTracks; i++)
+        this.flushTrack ('/track/' + (i + 1) + '/', i, trackBank.getTrack (i), dump);
     this.flushTrack ('/master/', -1,this.model.getMasterTrack (), dump);
 
     //
@@ -102,7 +104,7 @@ LemurWriter.prototype.flush = function (dump)
     // Primary Device
     //
 
-    cd = tb.primaryDevice;
+    cd = trackBank.primaryDevice;
     var selDevice = cd.getSelectedDevice ();
     this.sendOSC ('/primary/name', selDevice.name, dump);
     this.sendOSC ('/primary/bypass', !selDevice.enabled, dump);

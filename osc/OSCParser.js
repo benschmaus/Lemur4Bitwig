@@ -495,6 +495,7 @@ OSCParser.prototype.parseTrackCommands = function (parts, value)
             
         case 'toggleBank':
             this.model.toggleCurrentTrackBank ();
+            writer.flush (true);
             break;
 
 

@@ -499,7 +499,22 @@ OSCParser.prototype.parseTrackCommands = function (parts, value)
             
         case 'toggleBank':
             this.model.toggleCurrentTrackBank ();
-            writer.flush (true);
+			// Make sure a track is selected
+			var tb = this.model.getCurrentTrackBank ();
+			var tbOther = this.model.isEffectTrackBankActive () ? this.model.getTrackBank () : this.model.getEffectTrackBank ();
+			var track = tb.getSelectedTrack ();
+			if (track == null)
+				tb.select (0);
+			// Move the indication to the other bank
+            for (var i = 0; i < 8; i++)
+            {
+                tbOther.setVolumeIndication (i, false);
+                tbOther.setPanIndication (i, false);
+                tb.setVolumeIndication (i, true);
+                tb.setPanIndication (i, true);
+            }			
+
+			writer.flush (true);
             break;
 
 
@@ -1027,7 +1042,7 @@ OSCParser.prototype.parseMidi = function (parts, value)
                     if (value == null || value > 0)
                     {
                         this.scales.incOctave ();
-                        this.updateNoteMapping ();
+                        this.model.updateNoteMapping ();
                         displayNotification (this.scales.getRangeText ());
                     }
                     break;
@@ -1036,7 +1051,7 @@ OSCParser.prototype.parseMidi = function (parts, value)
                     if (value == null || value > 0)
                     {
                         this.scales.decOctave ();
-                        this.updateNoteMapping ();
+                        this.model.updateNoteMapping ();
                         displayNotification (this.scales.getRangeText ());
                     }
                     break;
@@ -1065,7 +1080,7 @@ OSCParser.prototype.parseMidi = function (parts, value)
                     if (value == null || value > 0)
                     {
                         this.scales.incDrumOctave ();
-                        this.updateNoteMapping ();
+                        this.model.updateNoteMapping ();
                         displayNotification (this.scales.getDrumRangeText ());
                     }
                     break;
@@ -1074,7 +1089,7 @@ OSCParser.prototype.parseMidi = function (parts, value)
                     if (value == null || value > 0)
                     {
                         this.scales.decDrumOctave ();
-                        this.updateNoteMapping ();
+                        this.model.updateNoteMapping ();
                         displayNotification (this.scales.getDrumRangeText ());
                     }
                     break;

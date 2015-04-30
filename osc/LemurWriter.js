@@ -266,10 +266,7 @@ LemurWriter.prototype.sendOSC = function (address, value, dump)
         var trieArray = this.trieGet(cleanAddress,this.trie,0);
         var trieData = trieArray[1];
         if(trieArray[0] && trieData != null){
-            if(typeof(trieData) == 'array'){
-                if (this.compareArray (trieData, value))
-                    return;
-            }else if(typeof(trieData) == 'object'){
+            if(trieData instanceof Array){
                 if (this.compareArray (trieData, value))
                     return;
             }else if(trieData == value)
@@ -304,10 +301,7 @@ LemurWriter.prototype.sendOSCGrid = function (address, valueAddress, value, dump
         var trieArray = this.trieGet(gridAddress,this.trie,0);
         var trieData = trieArray[1];
         if(trieArray[0] && trieData != null){
-            if(typeof(trieData) == 'array'){
-                if (this.compareArray (trieData, value))
-                    return;
-            }else if(typeof(trieData) == 'object'){
+            if(trieData instanceof Array){
                 if (this.compareArray (trieData, value))
                     return;
             }else if(trieData == value)

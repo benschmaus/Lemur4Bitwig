@@ -148,6 +148,10 @@ LemurWriter.prototype.flush = function (dump)
 
 LemurWriter.prototype.flushNotes = function (dump)
 {
+    var trans = model.getTransport ();
+    if(!trans.isPlaying)
+        return
+    
     var isKeyboardEnabled = this.canSelectedTrackHoldNotes ();
     var isRecording = this.model.hasRecordingState ();
     var scales = this.model.getScales();
@@ -261,20 +265,19 @@ LemurWriter.prototype.sendOSC = function (address, value, dump)
     {
         var trieArray = this.trieGet(cleanAddress,this.trie,0);
         var trieData = trieArray[1];
-        if(trieArray[0]){
+        if(trieArray[0] && trieData != null){
             if(typeof(trieData) == 'array'){
-                if (this.compareArray (trieData, value)){
+                if (this.compareArray (trieData, value))
                     return;
-                }
-            }else if(trieData == value){
+            }else if(typeof(trieData) == 'object'){
+                if (this.compareArray (trieData, value))
+                    return;
+            }else if(trieData == value)
                 return;
-            }
         
         }
     }
-    
 
-    
     this.trieSet(cleanAddress,value,this.trie,0);
 
     // Convert boolean values to integer for client compatibility
@@ -300,14 +303,16 @@ LemurWriter.prototype.sendOSCGrid = function (address, valueAddress, value, dump
     {
         var trieArray = this.trieGet(gridAddress,this.trie,0);
         var trieData = trieArray[1];
-        if(trieArray[0]){
+        if(trieArray[0] && trieData != null){
             if(typeof(trieData) == 'array'){
-                if (this.compareArray (trieData, value)){
+                if (this.compareArray (trieData, value))
                     return;
-                }
-            }else if(trieData == value){
+            }else if(typeof(trieData) == 'object'){
+                if (this.compareArray (trieData, value))
+                    return;
+            }else if(trieData == value)
                 return;
-            }
+            
         
         }
     }
@@ -364,6 +369,7 @@ LemurWriter.prototype.compareArray = function (a1, a2)
 {
     if(a1.length != a2.length)
         return false;
+    
     for (var i = 0; i < a1.length; i++)
     {
         if (a1[i] != a2[i])

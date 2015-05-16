@@ -32,6 +32,7 @@ LemurWriter.prototype.flush = function (dump)
     //
     // Transport
     //
+    
     var trans = this.model.getTransport ();
     this.sendOSC ('/play', trans.isPlaying, dump);
     this.sendOSC ('/record', trans.isRecording, dump);
@@ -140,10 +141,19 @@ LemurWriter.prototype.flush = function (dump)
     {
         this.messages = [];
         return;
-	}
+	   }
     
-    while (msg = this.messages.shift ())
-        host.sendDatagramPacket (Config.sendHost, Config.sendPort, msg);
+    var bundle = new OSCBundle();
+    while (msg = this.messages.shift ()){
+     //Is the bundle full?
+     if(!bundle.addMessage(msg)){
+      host.sendDatagramPacket (Config.sendHost, Config.sendPort, bundle.data);
+      bundle = new OSCBundle();
+      bundle.addMessage(msg);
+     }
+    }
+    if(bundle.messages > 0)
+     host.sendDatagramPacket (Config.sendHost, Config.sendPort, bundle.data);
 };
 
 LemurWriter.prototype.flushNotes = function (dump)
@@ -259,7 +269,7 @@ LemurWriter.prototype.flushFX = function (fxAddress, fxParam, dump)
 
 LemurWriter.prototype.sendOSC = function (address, value, dump)
 {
-    
+
     var cleanAddress = address.replace(/\//g,'').toLowerCase();
     if (!dump)
     {
@@ -276,7 +286,7 @@ LemurWriter.prototype.sendOSC = function (address, value, dump)
     }
 
     this.trieSet(cleanAddress,value,this.trie,0);
-
+    
     // Convert boolean values to integer for client compatibility
     if (value instanceof Array)
     {
@@ -295,6 +305,7 @@ LemurWriter.prototype.sendOSC = function (address, value, dump)
 
 LemurWriter.prototype.sendOSCGrid = function (address, valueAddress, value, dump)
 {
+
     var gridAddress = (address.replace(/\//g,'') + valueAddress.toString().replace(/,/g,'')).replace(' ','').toLowerCase();
     if (!dump)
     {
@@ -306,8 +317,6 @@ LemurWriter.prototype.sendOSCGrid = function (address, valueAddress, value, dump
                     return;
             }else if(trieData == value)
                 return;
-            
-        
         }
     }
     this.trieSet(gridAddress,value,this.trie,0);

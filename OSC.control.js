@@ -33,7 +33,7 @@ function init ()
     parser = new OSCParser (model, Config.receiveHost, Config.receivePort);
     writer = new LemurWriter (model);
      
-    offlineFlush();
+    scheduleFlush();
     
 	   println ("Initialized.");
 
@@ -43,15 +43,10 @@ function exit ()
 {
 }
 
-function offlineFlush(){
+function scheduleFlush(){
     var trans = model.getTransport ();
-    if(!trans.isPlaying){
-        writer.flush (false);
-    }
-    scheduleTask (offlineFlush, null, 100);
+    writer.flush (false);
+    scheduleTask (scheduleFlush, null, 100);
 }
 
-function flush ()
-{
-    return;
-}
+function flush () {}

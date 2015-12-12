@@ -5,6 +5,17 @@
 LemurWriter.TRACK_ATTRIBS = [ "activated", "selected", "name", "volumeStr", "volume", "panStr", "pan", "color", "vu", "mute", "solo", "recarm", "monitor", "autoMonitor", "sends", "slots", "crossfadeMode" ];
 LemurWriter.FXPARAM_ATTRIBS = [ "name", "valueStr", "value" ];
 
+LemurWriter.NOTE_STATE_COLORS = [];
+
+LemurWriter.NOTE_STATE_COLOR_OFF = [ 0, 0, 0 ]; // Black
+LemurWriter.NOTE_STATE_COLOR_ON  = [ 0, 1, 0 ]; // Green
+LemurWriter.NOTE_STATE_COLOR_REC = [ 1, 0, 0 ]; // Red
+
+LemurWriter.NOTE_STATE_COLORS[Scales.SCALE_COLOR_OFF]          = [ 0, 0, 0 ]; // Black
+LemurWriter.NOTE_STATE_COLORS[Scales.SCALE_COLOR_OCTAVE]       = [ 0.2666666805744171 , 0.7843137383460999 , 1 ]; // Ocean Blue
+LemurWriter.NOTE_STATE_COLORS[Scales.SCALE_COLOR_NOTE]         = [ 1, 1, 1 ]; // White
+LemurWriter.NOTE_STATE_COLORS[Scales.SCALE_COLOR_OUT_OF_SCALE] = [ 0, 0, 0 ]; // Black
+
 function LemurWriter (model, oscPort)
 {
     this.model   = model;
@@ -12,6 +23,8 @@ function LemurWriter (model, oscPort)
     this.oldValues = {};
     this.trie = {};
     this.messages = [];
+    
+
 }
 
 LemurWriter.prototype.flush = function (dump)
@@ -19,6 +32,7 @@ LemurWriter.prototype.flush = function (dump)
     //
     // Transport
     //
+    
     var trans = this.model.getTransport ();
     this.sendOSC ('/play', trans.isPlaying, dump);
     this.sendOSC ('/record', trans.isRecording, dump);
@@ -61,11 +75,16 @@ LemurWriter.prototype.flush = function (dump)
     // Master-/Track(-commands)
     //
     
-	   var tb = this.model.getTrackBank ();
-	   for (var i = 0; i < tb.numTracks; i++)
-        this.flushTrack ('/track/' + (i + 1) + '/', i, tb.getTrack (i), dump);
+	   var trackBank = this.model.getCurrentTrackBank ();
+	   for (var i = 0; i < trackBank.numTracks; i++)
+        this.flushTrack ('/track/' + (i + 1) + '/', i, trackBank.getTrack (i), dump);
     this.flushTrack ('/master/', -1,this.model.getMasterTrack (), dump);
-
+    
+    var selectedTrack = trackBank.getSelectedTrack ();
+    if (selectedTrack == null)
+        selectedTrack = OSCWriter.EMPTY_TRACK;
+    else
+        this.flushTrack ('/track/selected/', -1, selectedTrack, dump);
     //
     // Device
     //
@@ -91,7 +110,7 @@ LemurWriter.prototype.flush = function (dump)
     // Primary Device
     //
 
-    cd = tb.primaryDevice;
+    cd = trackBank.primaryDevice;
     var selDevice = cd.getSelectedDevice ();
     this.sendOSC ('/primary/name', selDevice.name, dump);
     this.sendOSC ('/primary/bypass', !selDevice.enabled, dump);
@@ -113,18 +132,58 @@ LemurWriter.prototype.flush = function (dump)
     //
     
     var user = this.model.getUserControlBank ();
-	for (var i = 0; i < cd.numParams; i++)
+    for (var i = 0; i < cd.numParams; i++)
         this.flushFX ('/user/param/' + (i + 1) + '/', user.getUserParam (i), dump);
 
+    this.flushNotes (dump);
+    
     if (this.messages.length == 0)
     {
         this.messages = [];
         return;
-	}
+	   }
     
-    while (msg = this.messages.shift ())
-        host.sendDatagramPacket (Config.sendHost, Config.sendPort, msg);
+    var bundle = new OSCBundle();
+    while (msg = this.messages.shift ()){
+     //Is the bundle full?
+     if(!bundle.addMessage(msg)){
+      host.sendDatagramPacket (Config.sendHost, Config.sendPort, bundle.data);
+      bundle = new OSCBundle();
+      bundle.addMessage(msg);
+     }
+    }
+    if(bundle.messages > 0)
+     host.sendDatagramPacket (Config.sendHost, Config.sendPort, bundle.data);
 };
+
+LemurWriter.prototype.flushNotes = function (dump)
+{
+    var trans = model.getTransport ();
+    if(!trans.isPlaying)
+        return
+    
+    var isKeyboardEnabled = this.canSelectedTrackHoldNotes ();
+    var isRecording = this.model.hasRecordingState ();
+    var scales = this.model.getScales();
+    for (var i = 0; i < 127; i++)
+    {
+        var color = isKeyboardEnabled ? (this.model.pressedKeys[i] > 0 ?
+            (isRecording ? LemurWriter.NOTE_STATE_COLOR_REC : LemurWriter.NOTE_STATE_COLOR_ON) :
+            LemurWriter.NOTE_STATE_COLORS[scales.getColor (this.model.keysTranslation, i)]) : 
+            LemurWriter.NOTE_STATE_COLOR_OFF;
+            
+            
+        
+        this.sendOSC ('/vkb_midi/note/' + i + '/color', [color[0], color[1], color[2]], dump);
+    }
+};
+
+LemurWriter.prototype.canSelectedTrackHoldNotes = function ()
+{
+    var t = this.model.getCurrentTrackBank ().getSelectedTrack ();
+    return t != null && t.canHoldNotes;
+};
+
 
 LemurWriter.prototype.flushTrack = function (trackAddress, trackGridNumber, track, dump)
 {
@@ -210,26 +269,24 @@ LemurWriter.prototype.flushFX = function (fxAddress, fxParam, dump)
 
 LemurWriter.prototype.sendOSC = function (address, value, dump)
 {
-    
+
     var cleanAddress = address.replace(/\//g,'').toLowerCase();
     if (!dump)
     {
         var trieArray = this.trieGet(cleanAddress,this.trie,0);
         var trieData = trieArray[1];
-        if(trieArray[0]){
-            if(typeof(trieData) == 'array'){
-                if (this.compareArray (trieData, value)){
+        if(trieArray[0] && trieData != null){
+            if(trieData instanceof Array){
+                if (this.compareArray (trieData, value))
                     return;
-                }
-            }else if(trieData == value){
+            }else if(trieData == value)
                 return;
-            }
         
         }
     }
-    
-    this.trieSet(cleanAddress,value,this.trie,0);
 
+    this.trieSet(cleanAddress,value,this.trie,0);
+    
     // Convert boolean values to integer for client compatibility
     if (value instanceof Array)
     {
@@ -239,6 +296,7 @@ LemurWriter.prototype.sendOSC = function (address, value, dump)
     else
         value = this.convertBooleanToInt (value);
 
+    
     var msg = new OSCMessage ();
     msg.init (address, value);
     this.messages.push (msg.build ());
@@ -247,20 +305,18 @@ LemurWriter.prototype.sendOSC = function (address, value, dump)
 
 LemurWriter.prototype.sendOSCGrid = function (address, valueAddress, value, dump)
 {
+
     var gridAddress = (address.replace(/\//g,'') + valueAddress.toString().replace(/,/g,'')).replace(' ','').toLowerCase();
     if (!dump)
     {
         var trieArray = this.trieGet(gridAddress,this.trie,0);
         var trieData = trieArray[1];
-        if(trieArray[0]){
-            if(typeof(trieData) == 'array'){
-                if (this.compareArray (trieData, value)){
+        if(trieArray[0] && trieData != null){
+            if(trieData instanceof Array){
+                if (this.compareArray (trieData, value))
                     return;
-                }
-            }else if(trieData == value){
+            }else if(trieData == value)
                 return;
-            }
-        
         }
     }
     this.trieSet(gridAddress,value,this.trie,0);
@@ -316,6 +372,7 @@ LemurWriter.prototype.compareArray = function (a1, a2)
 {
     if(a1.length != a2.length)
         return false;
+    
     for (var i = 0; i < a1.length; i++)
     {
         if (a1[i] != a2[i])

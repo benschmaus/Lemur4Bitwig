@@ -29,12 +29,11 @@ function init ()
     Config.init ();
     var scales = new Scales (0, 128, 128, 1);
     scales.setChromatic (true);
-    model = new Model (70, scales, 8, 8, 8);
-
+    model = new OSCModel (scales);
     parser = new OSCParser (model, Config.receiveHost, Config.receivePort);
     writer = new LemurWriter (model);
-    
-    offlineFlush();
+     
+    scheduleFlush();
     
 	   println ("Initialized.");
 
@@ -44,19 +43,10 @@ function exit ()
 {
 }
 
-function offlineFlush(){
+function scheduleFlush(){
     var trans = model.getTransport ();
-    if(!trans.isPlaying){
-        writer.flush (false);
-    }
-    scheduleTask (offlineFlush, null, 1000);
+    writer.flush (false);
+    scheduleTask (scheduleFlush, null, 100);
 }
 
-function flush ()
-{
-    if(limiter == 10){
-       writer.flush (false);
-       limiter = 0;
-    }
-    limiter++;
-}
+function flush () {}

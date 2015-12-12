@@ -22,6 +22,7 @@ OSCMessage.prototype.init = function (address, param, type)
     }
     else
        this.addArgument(param,type);
+
 };
 
 OSCMessage.prototype.addArgument = function (param, type)

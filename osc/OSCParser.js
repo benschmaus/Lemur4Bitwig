@@ -79,8 +79,6 @@ OSCParser.prototype.parse = function (msg)
 			break;
 
 		case 'overdub':
-            if (value != null && value == 0)
-                return;
             if (oscParts.length > 0 && oscParts[0] == 'launcher')
                 this.transport.toggleLauncherOverdub ();
             else
